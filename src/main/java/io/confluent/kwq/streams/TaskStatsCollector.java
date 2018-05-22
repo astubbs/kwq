@@ -46,6 +46,7 @@ public class TaskStatsCollector {
   private final StreamsConfig streamsConfig;
   private KafkaStreams streams;
   private final Queue<TaskStats> stats = new LockfreeConcurrentQueue<>();
+  private int windowDurationS;
 
   public TaskStatsCollector(final String taskStatusTopic, final StreamsConfig streamsConfig, final int windowDurationS){
     this.streamsConfig = streamsConfig;
@@ -53,6 +54,7 @@ public class TaskStatsCollector {
   }
 
   private Topology buildTopology(final String taskStatusTopic, final int windowDurationS) {
+    this.windowDurationS = windowDurationS;
     StreamsBuilder builder = new StreamsBuilder();
     KStream<String, Task> tasks = builder.stream(taskStatusTopic);
 
@@ -94,8 +96,15 @@ public class TaskStatsCollector {
   }
 
   public List<TaskStats> getStats() {
+    if (currentWindowStats != null && currentWindowStats.getTime() < System.currentTimeMillis() - (windowDurationS * 1000)) {
+      stats.add(currentWindowStats);
+      currentWindowStats = null;
+    } else if (currentWindowStats == null) {
+      currentWindowStats = new TaskStats();
+      currentWindowStats.setTime(System.currentTimeMillis() - (windowDurationS * 1000));
+    }
     CopyOnWriteArrayList results = new CopyOnWriteArrayList<>(stats);
-    results.add(currentWindowStats);
+    if (currentWindowStats != null) results.add(currentWindowStats);
     Collections.reverse(results);
     return results;
   }

@@ -79,17 +79,27 @@ Build the jar (and run tests)
 > mvn package
 
 OR
-> mvn cleam package -DskipTests
+> mvn clean package -DskipTests
 
-Expand the target/*.zip file to a destination folder and then run the KwqRestServer against your brokers (defaults to localhost:9092)
+Expand **target/kwq-0.1-SNAPSHOT-dist.zip** to a destination folder and run the KwqRestServer against your brokers (defaults to localhost:9092)
 >java -cp "kwq-0.1-SNAPSHOT.jar:lib/*" -Dbootstrap.servers=localhost:9092 io.confluent.kwq.KwqRestServerMain
+
+Alternatively, modify the kwq.sh file (as above) apply execute permission and then execute it. 
+
+>chmod +x kwq.sh
+
+>./kwq.sh &
 
 To view the logging configuration file being used when starting KWQ:
 > -Dlog4j.debug=true
 
-*Log files will appear in the installation directory - see log4j.properties*
+*Log files will appear in the ./log/ directory - see log4j.properties for configuration*
 
- ## Endpoints
+## Within your IDE
+
+> Run java class  io.confluent.kwq.KwqRestServerMain with System property: -Dkwq.resources.folder=./src/main/resources 
+
+ ## User interface and Endpoints
  - ADMIN UI: http://localhost:8080/ui/index.html
  - SWAGGER: http://localhost:8080/swagger/index.html Run the task simulator and interact with the REST API 
  - REST: http://localhost:8080/kwq 

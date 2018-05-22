@@ -58,7 +58,7 @@ public class KwqRestServerMain {
 
     ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
     context.setContextPath("/");
-    context.setBaseResource(Resource.newResource(resourcesFolder + "ui"));
+    context.setBaseResource(Resource.newResource(resourcesFolder + "/ui"));
     context.setWelcomeFiles(new String[]{"index.html"});
     server.setHandler(context);
 
