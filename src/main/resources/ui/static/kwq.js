@@ -109,9 +109,14 @@ function createTable() {
                         }, {
                             title: "Duration",
                           "data" : "duration"
+                        }, {
+                            title: "Worker",
+                          "data" : "workerEndpoint"
+                        }, {
+                            title: "Meta",
+                          "data" : "meta"
                         }
-
-                         ]
+                     ]
     } );
     $('#refreshTable').click(function() {
         refreshTable();

@@ -79,7 +79,9 @@ public class Simulator {
     log.info(" Worker wait:{}", waitCount.incrementAndGet());
 
     Task task = kwq.consume();
+    task.setWorkerEndpoint("http://worker:89991/jmx");
     task.setStatus(Task.Status.RUNNING);
+    task.setMeta("Running on x84 engine");
     taskStatus.update(task);
 
 
