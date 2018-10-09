@@ -58,6 +58,8 @@ public class SimpleKwqTaskPriorityTest {
 
     Task first = kwq.consume();
     Assert.assertEquals(testData.get("5"), first);
+
+    Thread.sleep(10000);
     System.out.println(first);
   }
 

@@ -30,9 +30,15 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class TaskStatsCollectorTest {
 
@@ -42,27 +48,81 @@ public class TaskStatsCollectorTest {
     IntegrationTestHarness testHarness = new IntegrationTestHarness();
     testHarness.start();
 
-    Map<String, Task> stats = Collections.singletonMap("stats", new Task());
-    testHarness.produceData("TestTopic", stats, new TaskSerDes(), System.currentTimeMillis() );
+    int partitionCount = 100;
 
-    Thread.sleep(1000);
+    int ratePerSecond = 1000;
 
-    StreamsConfig streamsConfig = new StreamsConfig(getProperties(testHarness.embeddedKafkaCluster.bootstrapServers()));
+    startDataFeed(partitionCount, testHarness, ratePerSecond);
+
+    for (int i = 0; i < 2; i++ ) {
+
+      StreamsConfig streamsConfig = new StreamsConfig(getProperties(testHarness.embeddedKafkaCluster.bootstrapServers()));
+      run1(i, streamsConfig);
+
+    }
+  }
+
+  private void startDataFeed(int partitionCount, IntegrationTestHarness testHarness, int ratePerSecondK) {
+
+    ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+
+    testHarness.createTopic("TestTopic", partitionCount, 1);
+
+    if (ratePerSecondK < 1000) {
+      ratePerSecondK = 1000;
+    }
+    // 999999999 nano per second
+    int nanoInterval = 999999999/ratePerSecondK;
+    System.out.println(String.format("Sending 1 message every %d nano's", nanoInterval));
 
 
+    executor.scheduleAtFixedRate(new Runnable() {
+      int count = 0;
+      @Override
+      public void run() {
+        Map<String, Task> stats = getTestData(count++, 1);
+        try {
+          testHarness.produceData("TestTopic", stats, new TaskSerDes(), System.currentTimeMillis() );
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        } catch (TimeoutException e) {
+          e.printStackTrace();
+        } catch (ExecutionException e) {
+          e.printStackTrace();
+        }
+        if (count % 1000 == 0) {
+          System.out.println("Sent:" + count);
+        }
+      }
+    }, 1, nanoInterval, TimeUnit.NANOSECONDS);
+  }
+
+  private Map<String, Task> getTestData(int start, int amount) {
+    Map<String, Task> stats = new HashMap<>();
+    for (int i = start; i < amount; i++) {
+      stats.put("k-" + i, new Task());
+    }
+    return stats;
+  }
+
+  private void run1(int count, StreamsConfig streamsConfig) throws InterruptedException, java.util.concurrent.TimeoutException, java.util.concurrent.ExecutionException {
     TaskStatsCollector totalEvents = new TaskStatsCollector("TestTopic", streamsConfig, 2);
-    totalEvents.start();;
-    Thread.sleep(10 * 1000);
-    System.out.println("Write event 2");
-    testHarness.produceData("TestTopic", stats, new TaskSerDes(), System.currentTimeMillis() );
+    totalEvents.start();
     Thread.sleep(10 * 1000);
 
     List<TaskStats> cstats = totalEvents.getStats();
 
-    System.out.println(cstats);
+    System.out.println("STATS----:" + cstats);
+
+    totalEvents.stop();
+
+    System.out.println(String.format("\n\n========== NEXT  =================%d \n\n", count));
+    Thread.sleep(10 * 1000);
+
 
 
   }
+
   @Test
   public void getTotalWindowEvents() throws Exception {
 
@@ -109,12 +169,12 @@ public class TaskStatsCollectorTest {
 
   private Properties getProperties(String broker) {
     Properties props = new Properties();
-    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "test-" + System.currentTimeMillis());
+    props.put(StreamsConfig.APPLICATION_ID_CONFIG, "TEST-APP-ID");// + System.currentTimeMillis());
     props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, broker);
     props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
     props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, TaskSerDes.class.getName());
     props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
-    props.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 5000);
+    props.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 2000);
     return props;
   }
 

@@ -43,6 +43,8 @@ public class RestServiceTest {
 
     System.setProperty("bootstrap.servers", testHarness.embeddedKafkaCluster.bootstrapServers());
 
+    System.setProperty("kwq.resources.folder", "src/main/resources");
+
     Thread.sleep( 500);
 
     KwqRestServerMain.initialize();

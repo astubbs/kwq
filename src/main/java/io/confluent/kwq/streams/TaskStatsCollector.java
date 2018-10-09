@@ -93,6 +93,7 @@ public class TaskStatsCollector {
   }
   public void stop() {
     streams.close();
+    streams.cleanUp();
   }
 
   public List<TaskStats> getStats() {

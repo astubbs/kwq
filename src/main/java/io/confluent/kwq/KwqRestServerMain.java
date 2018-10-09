@@ -73,6 +73,10 @@ public class KwqRestServerMain {
             "io.confluent.kwq,io.swagger.v3.jaxrs2.integration.resources");
 
 
+    if (!new File(resourcesFolder).exists()) {
+      System.err.println("Resources folder doesnt exist, check:" + new File(resourcesFolder).getAbsolutePath());
+    }
+
     // TODO: make openapi.json handle paths properly (i.e. /api/kwq )
     // http://localhost:8080/openapi.json
     ServletHolder swaggerHolder = new ServletHolder("swaggerResources", DefaultServlet.class);
